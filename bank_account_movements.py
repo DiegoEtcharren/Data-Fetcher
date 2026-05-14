@@ -14,7 +14,7 @@ DB_CONFIG = {
     'port': os.getenv("DB_PORT", "3306"),
     'user': os.getenv("DB_USER", "root"),
     'password': os.getenv("DB_PASS", ""),
-    'database': os.getenv("DB_NAME", "Nailkery")
+    'database': os.getenv("DB_NAME", "LOCAL")
 }
 
 def insertar_movimientos_bd(df_final):
