@@ -1,0 +1,43 @@
+name: Data Sync Automation
+
+on:
+  schedule:
+    # Runs at 08:00 UTC (approx 2:00 AM Central Time) every day
+    - cron: '0 8 * * *'
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Data Sync Script
+        env:
+          # Database Secrets
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASS: ${{ secrets.DB_PASS }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          # AgendaPro Secrets
+          AGENDA_USER: ${{ secrets.AGENDA_USER }}
+          AGENDA_PASS: ${{ secrets.AGENDA_PASS }}
+        run: python local_sync.py
