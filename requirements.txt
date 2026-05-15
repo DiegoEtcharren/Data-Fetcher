@@ -1,0 +1,7 @@
+requests
+pandas
+numpy
+mysql-connector-python
+python-dotenv
+selenium
+webdriver-manager
