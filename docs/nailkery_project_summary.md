@@ -112,17 +112,17 @@ driver = webdriver.Chrome(service=chrome_service, options=chrome_options)
 
 ## 4. Production Cron Automation Workflow
 
-To guarantee system synchronization daily without interactive terminal commands, a standard Unix system cron profile handles invocation isolated cleanups.
+To guarantee system synchronization daily without interactive terminal commands, a standard Unix system cron profile handles native invocation directly on the host OS. This bypasses Docker sandbox constraints on the 1GB RAM Raspberry Pi 3.
 
 ### Target Automation Rule
 The script runs automatically at **3:00 AM** every single morning:
 
 ```text
-0 3 * * * cd ~/projects/Nailkery && /usr/bin/docker compose run --rm data_fetcher python local_sync.py >> ~/projects/Nailkery/data-fetcher-Nailkery/local_sync.log 2>&1
+0 3 * * * cd ~/projects/Nailkery/data-fetcher-Nailkery && /usr/bin/python3 local_sync.py >> ~/projects/Nailkery/data-fetcher-Nailkery/local_sync.log 2>&1
 ```
 
 ### Breakdown of Automated Properties:
 1. `0 3 * * *`: Precise trigger matrix mapping to the third hour of the day.
-2. `cd ~/projects/Nailkery`: Switches system environment contexts to access localized `docker-compose` settings.
-3. `docker compose run --rm`: Fires up a container instance, runs the scraper process to sync target pipelines, and immediately tears down and removes (`--rm`) the dead shell to prevent structural disk bloat.
-4. `>> .../local_sync.log 2>&1`: Redirects absolute standard system outputs (`stdout`) and error arrays (`stderr`) cleanly down into tracking files for rapid debugging.
+2. `cd ~/projects/Nailkery/data-fetcher-Nailkery`: Switches context to the script directory.
+3. `/usr/bin/python3 local_sync.py`: Executes the sync scraper natively using the host's Python interpreter and Pi-optimized Chromium build, avoiding container sandbox memory crashes.
+4. `>> .../local_sync.log 2>&1`: Redirects standard output (`stdout`) and error arrays (`stderr`) down into tracking files for rapid debugging.
