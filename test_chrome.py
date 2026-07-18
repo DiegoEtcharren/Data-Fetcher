@@ -15,8 +15,8 @@ load_dotenv()
 AGENDA_USER = os.getenv("AGENDA_USER")
 AGENDA_PASS = os.getenv("AGENDA_PASS")
 
-def test_login_variation(disable_shm_usage=False, site_per_process=True):
-    print(f"\n--- Testing Login Flow (disable_shm_usage={disable_shm_usage}, site_per_process={site_per_process}) ---")
+def test_login_stability():
+    print("\n--- Testing Login Flow with Stability Flags ---")
     if not AGENDA_USER or not AGENDA_PASS:
         print("Error: AGENDA_USER or AGENDA_PASS is not set in .env. Skipping login test.")
         return False
@@ -24,28 +24,31 @@ def test_login_variation(disable_shm_usage=False, site_per_process=True):
     chrome_options = Options()
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
-    
-    if disable_shm_usage:
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        
+    chrome_options.add_argument("--disable-setuid-sandbox")
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--disable-software-rasterizer")
+    chrome_options.add_argument("--disable-webgl")
+    chrome_options.add_argument("--disable-features=site-per-process")
+    chrome_options.add_argument("--js-flags=--max-old-space-size=512")
     
-    if site_per_process:
-        chrome_options.add_argument("--disable-features=site-per-process")
-        
+    # Standard desktop User-Agent to avoid bot-protection script crashes
+    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+    
     chrome_options.binary_location = "/usr/bin/chromium"
     chrome_service = Service(executable_path="/usr/bin/chromedriver")
     
     driver = None
     try:
         driver = webdriver.Chrome(service=chrome_service, options=chrome_options)
-        print("1. Driver initialized.")
+        print("1. Driver initialized with stability flags.")
         
         driver.get("https://app.agendapro.com/sign_in")
-        print("2. Loaded Sign-In page.")
+        print("2. Loaded Sign-In page. Waiting for email field to render...")
         
-        wait = WebDriverWait(driver, 20)
+        # Log page title and current URL to verify it's still alive
+        print(f"Current Title: {driver.title} | Current URL: {driver.current_url}")
+        
+        wait = WebDriverWait(driver, 30)
         
         # Fill Email
         email_field = wait.until(EC.presence_of_element_located((By.NAME, "email")))
@@ -71,22 +74,11 @@ def test_login_variation(disable_shm_usage=False, site_per_process=True):
         return True
         
     except Exception as e:
-        print(f"❌ Test FAILED: {e}")
+        print(f"❌ Stability test FAILED: {e}")
         return False
     finally:
         if driver:
             driver.quit()
 
 if __name__ == "__main__":
-    # Test variation 1: Use the 2GB shared memory (/dev/shm) directly (disable_shm_usage=False)
-    success = test_login_variation(disable_shm_usage=False, site_per_process=True)
-    
-    if not success:
-        # Test variation 2: disable_shm_usage=True but site_per_process=True
-        print("\nRetrying with disable_shm_usage=True...")
-        success = test_login_variation(disable_shm_usage=True, site_per_process=True)
-        
-    if not success:
-        # Test variation 3: disable_shm_usage=False, site_per_process=False
-        print("\nRetrying with disable_shm_usage=False, site_per_process=False...")
-        success = test_login_variation(disable_shm_usage=False, site_per_process=False)
+    test_login_stability()
