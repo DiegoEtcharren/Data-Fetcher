@@ -4,8 +4,8 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 
-def test_passive_load():
-    print("\n--- Testing Passive Page Load and Sleep (Checking if page itself crashes browser) ---")
+def test_extreme_low_memory():
+    print("\n--- Testing Passive Page Load with Extreme Low-Memory Flags ---")
     chrome_options = Options()
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
@@ -13,10 +13,21 @@ def test_passive_load():
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--disable-software-rasterizer")
     chrome_options.add_argument("--disable-webgl")
-    chrome_options.add_argument('--js-flags=--jitless')
+    
+    # Run in a single process to save massive memory overhead (highly recommended for 1GB RAM)
+    chrome_options.add_argument("--single-process")
+    
+    # Offload shared memory to disk (/tmp) to protect the tiny 1GB RAM
     chrome_options.add_argument("--disable-dev-shm-usage")
     
+    # Limit V8 heap and disable compiler optimizations to save RAM/CPU
+    chrome_options.add_argument('--js-flags=--max-old-space-size=128 --no-opt')
+    
     chrome_options.add_argument("--disable-features=AudioServiceOutOfProcess,ClientSidePhishingDetection,JavaScriptProfiler,OptimizationGuide,SitePerProcess,Translate")
+    chrome_options.add_argument("--disable-background-networking")
+    chrome_options.add_argument("--disable-background-timer-throttling")
+    chrome_options.add_argument("--disable-backgrounding-occluded-windows")
+    chrome_options.add_argument("--disable-breakpad")
     
     # Standard desktop User-Agent
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
@@ -39,7 +50,6 @@ def test_passive_load():
             print(f"   Sleep second {i}... tab is alive (Title: {title})")
             
         print("3. Sleep completed successfully! Browser did not crash passively.")
-        
         print("4. Attempting to get DOM length...")
         dom_length = len(driver.page_source)
         print(f"   Page source size: {dom_length} characters.")
@@ -47,11 +57,11 @@ def test_passive_load():
         return True
         
     except Exception as e:
-        print(f"❌ Passive test FAILED: {e}")
+        print(f"❌ Low-Memory test FAILED: {e}")
         return False
     finally:
         if driver:
             driver.quit()
 
 if __name__ == "__main__":
-    test_passive_load()
+    test_extreme_low_memory()
