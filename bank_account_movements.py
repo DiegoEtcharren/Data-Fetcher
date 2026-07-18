@@ -91,8 +91,18 @@ def limpiar_estado_de_cuenta(archivo_entrada):
     # 3. Formateo de Fecha
     df['Fecha_Limpia'] = pd.to_datetime(df['Fecha'], format='%d%m%Y', errors='coerce').dt.strftime('%Y-%m-%d')
 
-    # 4. Creación del Monto Real
-    df['Monto_Real'] = np.where(df['Cargo/Abono'] == '-', df['Importe'] * -1, df['Importe'])
+    # 4. Creación del Monto Real (Asegurando que cargos sean negativos y abonos positivos de forma robusta)
+    # Limpiamos e Importamos como numérico absoluto
+    df['Importe'] = pd.to_numeric(
+        df['Importe'].astype(str).str.replace(',', '', regex=False).str.replace('$', '', regex=False).str.strip(), 
+        errors='coerce'
+    ).fillna(0.0)
+
+    # Normalizamos el signo de Cargo/Abono para soportar diferentes tipos de guiones (en-dash, em-dash, etc.)
+    df['Cargo/Abono'] = df['Cargo/Abono'].astype(str).str.strip().apply(lambda x: '-' if '-' in x or '–' in x or '—' in x else '+')
+
+    # Creamos Monto_Real forzando el signo correspondiente
+    df['Monto_Real'] = np.where(df['Cargo/Abono'] == '-', -df['Importe'].abs(), df['Importe'].abs())
 
     # 5. DICCIONARIO DE CATEGORÍAS
     categorias_personalizadas = {
