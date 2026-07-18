@@ -15,16 +15,8 @@ load_dotenv()
 AGENDA_USER = os.getenv("AGENDA_USER")
 AGENDA_PASS = os.getenv("AGENDA_PASS")
 
-def print_shm_size():
-    print("--- Checking Shared Memory (/dev/shm) inside container ---")
-    try:
-        res = subprocess.run(["df", "-h", "/dev/shm"], capture_output=True, text=True)
-        print(res.stdout)
-    except Exception as e:
-        print(f"Could not check /dev/shm: {e}")
-
-def test_full_login():
-    print("--- Running Full Login and Redirect Test ---")
+def test_login_variation(disable_shm_usage=False, site_per_process=True):
+    print(f"\n--- Testing Login Flow (disable_shm_usage={disable_shm_usage}, site_per_process={site_per_process}) ---")
     if not AGENDA_USER or not AGENDA_PASS:
         print("Error: AGENDA_USER or AGENDA_PASS is not set in .env. Skipping login test.")
         return False
@@ -32,15 +24,17 @@ def test_full_login():
     chrome_options = Options()
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
+    
+    if disable_shm_usage:
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--disable-software-rasterizer")
+    
+    if site_per_process:
+        chrome_options.add_argument("--disable-features=site-per-process")
+        
     chrome_options.binary_location = "/usr/bin/chromium"
-    
-    # Enable chrome log dump to stderr to catch low-level crashes
-    chrome_options.add_argument("--enable-logging")
-    chrome_options.add_argument("--v=1")
-    
     chrome_service = Service(executable_path="/usr/bin/chromedriver")
     
     driver = None
@@ -66,26 +60,33 @@ def test_full_login():
         # Click Login
         login_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.submit-button")))
         login_button.click()
-        print("5. Clicked login button. Waiting for redirect to /bookings...")
+        print("5. Clicked login button. Waiting for redirect...")
         
         # Wait for redirect
         WebDriverWait(driver, 60).until(lambda d: "/bookings" in d.current_url)
         print(f"6. Redirected successfully! Current URL: {driver.current_url}")
-        
-        time.sleep(3)
-        print("7. Settle time completed.")
         
         cookies = driver.get_cookies()
         print(f"Success! Obtained {len(cookies)} cookies.")
         return True
         
     except Exception as e:
-        print(f"❌ Login Test FAILED: {e}")
+        print(f"❌ Test FAILED: {e}")
         return False
     finally:
         if driver:
             driver.quit()
 
 if __name__ == "__main__":
-    print_shm_size()
-    test_full_login()
+    # Test variation 1: Use the 2GB shared memory (/dev/shm) directly (disable_shm_usage=False)
+    success = test_login_variation(disable_shm_usage=False, site_per_process=True)
+    
+    if not success:
+        # Test variation 2: disable_shm_usage=True but site_per_process=True
+        print("\nRetrying with disable_shm_usage=True...")
+        success = test_login_variation(disable_shm_usage=True, site_per_process=True)
+        
+    if not success:
+        # Test variation 3: disable_shm_usage=False, site_per_process=False
+        print("\nRetrying with disable_shm_usage=False, site_per_process=False...")
+        success = test_login_variation(disable_shm_usage=False, site_per_process=False)
