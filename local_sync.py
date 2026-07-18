@@ -57,6 +57,8 @@ def get_agendapro_headers(credentials, headless=True):
     # Required docker options
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--disable-software-rasterizer")
 
     # Force execution via native ARM64 Chromium build inside the container
     chrome_options.binary_location = "/usr/bin/chromium"
