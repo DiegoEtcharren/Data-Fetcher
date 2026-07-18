@@ -54,18 +54,30 @@ def get_agendapro_headers(credentials, headless=True):
     if headless:
         chrome_options.add_argument("--headless")
 
-    # Required docker options
+    # Required docker and stability/memory optimization options for 1GB RAM Pi
     chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--disable-setuid-sandbox")
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--disable-software-rasterizer")
+    chrome_options.add_argument("--disable-webgl")
+    chrome_options.add_argument("--disable-gpu-compositing")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    
+    # Restrict V8 JS memory and disable optimization to fit in Raspberry Pi RAM
+    chrome_options.add_argument('--js-flags=--max-old-space-size=256 --no-opt')
+    
+    # Disable heavy background browser features
+    chrome_options.add_argument("--disable-features=AudioServiceOutOfProcess,ClientSidePhishingDetection,JavaScriptProfiler,OptimizationGuide,SitePerProcess,Translate")
+    chrome_options.add_argument("--disable-background-networking")
+    chrome_options.add_argument("--disable-background-timer-throttling")
+    chrome_options.add_argument("--disable-backgrounding-occluded-windows")
+    chrome_options.add_argument("--disable-breakpad")
+    
+    # Standard desktop User-Agent to avoid bot-shield blocks/crashes
+    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
     # Force execution via native ARM64 Chromium build inside the container
     chrome_options.binary_location = "/usr/bin/chromium"
-
-    # Disable logging to keep the console clean
-    chrome_options.add_argument("--log-level=3")
-    chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
 
     # Directly reference native system driver binary pathway
     chrome_service = Service(executable_path="/usr/bin/chromedriver")
