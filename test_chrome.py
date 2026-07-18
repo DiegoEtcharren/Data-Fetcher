@@ -4,8 +4,8 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 
-def test_extreme_low_memory():
-    print("\n--- Testing Passive Page Load with Extreme Low-Memory Flags ---")
+def test_balanced_low_memory():
+    print("\n--- Testing Passive Page Load with Balanced Low-Memory Flags ---")
     chrome_options = Options()
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
@@ -14,15 +14,16 @@ def test_extreme_low_memory():
     chrome_options.add_argument("--disable-software-rasterizer")
     chrome_options.add_argument("--disable-webgl")
     
-    # Run in a single process to save massive memory overhead (highly recommended for 1GB RAM)
-    chrome_options.add_argument("--single-process")
+    # Disable GPU compositing to save RAM and prevent compositor crashes
+    chrome_options.add_argument("--disable-gpu-compositing")
     
-    # Offload shared memory to disk (/tmp) to protect the tiny 1GB RAM
+    # Offload shared memory to /tmp disk/swap to protect physical RAM
     chrome_options.add_argument("--disable-dev-shm-usage")
     
-    # Limit V8 heap and disable compiler optimizations to save RAM/CPU
-    chrome_options.add_argument('--js-flags=--max-old-space-size=128 --no-opt')
+    # Balanced V8 heap (256MB) and disable optimizations to save CPU/RAM
+    chrome_options.add_argument('--js-flags=--max-old-space-size=256 --no-opt')
     
+    # Optimize features and background processes
     chrome_options.add_argument("--disable-features=AudioServiceOutOfProcess,ClientSidePhishingDetection,JavaScriptProfiler,OptimizationGuide,SitePerProcess,Translate")
     chrome_options.add_argument("--disable-background-networking")
     chrome_options.add_argument("--disable-background-timer-throttling")
@@ -57,11 +58,11 @@ def test_extreme_low_memory():
         return True
         
     except Exception as e:
-        print(f"❌ Low-Memory test FAILED: {e}")
+        print(f"❌ Balanced test FAILED: {e}")
         return False
     finally:
         if driver:
             driver.quit()
 
 if __name__ == "__main__":
-    test_extreme_low_memory()
+    test_balanced_low_memory()
