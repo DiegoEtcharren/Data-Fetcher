@@ -15,8 +15,8 @@ load_dotenv()
 AGENDA_USER = os.getenv("AGENDA_USER")
 AGENDA_PASS = os.getenv("AGENDA_PASS")
 
-def test_login_stability():
-    print("\n--- Testing Login Flow with Stability Flags ---")
+def test_login_jitless():
+    print("\n--- Testing Login Flow with JITless Mode ---")
     if not AGENDA_USER or not AGENDA_PASS:
         print("Error: AGENDA_USER or AGENDA_PASS is not set in .env. Skipping login test.")
         return False
@@ -29,7 +29,9 @@ def test_login_stability():
     chrome_options.add_argument("--disable-software-rasterizer")
     chrome_options.add_argument("--disable-webgl")
     chrome_options.add_argument("--disable-features=site-per-process")
-    chrome_options.add_argument("--js-flags=--max-old-space-size=512")
+    
+    # Disable JIT compiler to prevent ARM64 memory allocation crashes in Docker
+    chrome_options.add_argument('--js-flags=--jitless')
     
     # Standard desktop User-Agent to avoid bot-protection script crashes
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
@@ -40,7 +42,7 @@ def test_login_stability():
     driver = None
     try:
         driver = webdriver.Chrome(service=chrome_service, options=chrome_options)
-        print("1. Driver initialized with stability flags.")
+        print("1. Driver initialized in JITless mode.")
         
         driver.get("https://app.agendapro.com/sign_in")
         print("2. Loaded Sign-In page. Waiting for email field to render...")
@@ -74,11 +76,11 @@ def test_login_stability():
         return True
         
     except Exception as e:
-        print(f"❌ Stability test FAILED: {e}")
+        print(f"❌ JITless test FAILED: {e}")
         return False
     finally:
         if driver:
             driver.quit()
 
 if __name__ == "__main__":
-    test_login_stability()
+    test_login_jitless()
