@@ -14,7 +14,6 @@ from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -55,11 +54,20 @@ def get_agendapro_headers(credentials, headless=True):
     if headless:
         chrome_options.add_argument("--headless")
 
+    # Required docker options
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+
+    # Force execution via native ARM64 Chromium build inside the container
+    chrome_options.binary_location = "/usr/bin/chromium"
+
     # Disable logging to keep the console clean
     chrome_options.add_argument("--log-level=3")
     chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
 
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+    # Directly reference native system driver binary pathway
+    chrome_service = Service(executable_path="/usr/bin/chromedriver")
+    driver = webdriver.Chrome(service=chrome_service, options=chrome_options)
 
     try:
         driver.get("https://app.agendapro.com/sign_in")
