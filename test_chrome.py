@@ -33,8 +33,20 @@ def test_balanced_low_memory():
     # Standard desktop User-Agent
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
     
-    chrome_options.binary_location = "/usr/bin/chromium"
-    chrome_service = Service(executable_path="/usr/bin/chromedriver")
+    # Auto-detect Chromium and ChromeDriver binary locations
+    chrome_path = "/usr/bin/chromium"
+    if not os.path.exists(chrome_path):
+        chrome_path = "/usr/bin/chromium-browser"
+
+    driver_path = "/usr/bin/chromedriver"
+    if not os.path.exists(driver_path):
+        driver_path = "/usr/lib/chromium-browser/chromedriver"
+
+    # Force execution via native ARM64 Chromium build
+    chrome_options.binary_location = chrome_path
+
+    # Directly reference native system driver binary pathway
+    chrome_service = Service(executable_path=driver_path)
     
     driver = None
     try:
